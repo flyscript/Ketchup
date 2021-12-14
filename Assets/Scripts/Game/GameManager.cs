@@ -4,8 +4,10 @@ using UnityEngine;
 
 public class GameManager : MonoBehaviour
 {
-    
-    
+
+    private static List<GameObject> _activeObjects;
+    private static DateTime _timeOfLastObject;
+
     // Start is called before the first frame update
     void Start()
     {
