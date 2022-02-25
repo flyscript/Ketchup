@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class GameManager : MonoBehaviour
 {
@@ -10,6 +11,11 @@ public class GameManager : MonoBehaviour
     private const int MAX_TILES_Y_MIN = 10;
     
     public GameObject TilePrefab = null;
+    public int TileXOffset = 10;
+    public int TileXSize = 20;
+    public int TileYOffset = -10;
+    public int TileYSize = 20;
+    public GameObject TileArea = null;
     
     private static List<GameObject> _activeObjects;
     private static List<List<GameObject>> _gameMap;
@@ -44,12 +50,21 @@ public class GameManager : MonoBehaviour
             for (int posX = 0; posX < sizeX; posX++)
             {
                 Debug.Log($"Creating tile at position {posX} on row {posY}");
-                var tile = Instantiate(TilePrefab, new Vector3(posX, posY, 0), Quaternion.identity);
+                
+                var tile = Instantiate(
+                    TilePrefab, 
+                    new Vector3(TileXOffset + (posX * TileXSize), TileYOffset - (posY * TileYSize), 0), 
+                    Quaternion.identity
+                    );
+                
                 _gameMap[posY][posX] = tile;
                 
                 // Set random colour
-                Renderer sprite = tile.gameObject.transform.GetChild(0).GetComponent(typeof(Renderer)) as Renderer;
-                sprite.material.color = Random.ColorHSV(0f, 1f, 1f, 1f, 0.5f, 1f);
+                Image image = tile.GetComponent(typeof(Image)) as Image;
+                image.color = Random.ColorHSV(0f, 1f, 1f, 1f, 0.5f, 1f);
+                
+                // Set Parent
+                tile.transform.SetParent(TileArea.transform, false);
             }
         }
     }
