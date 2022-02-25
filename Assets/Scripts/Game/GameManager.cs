@@ -9,6 +9,8 @@ public class GameManager : MonoBehaviour
     private const int MAX_TILES_X_MIN = 6;
     private const int MAX_TILES_Y_MAX = 20;
     private const int MAX_TILES_Y_MIN = 10;
+
+    private bool debounce = false;
     
     public GameObject TilePrefab = null;
     public int TileXOffset = 10;
@@ -22,6 +24,12 @@ public class GameManager : MonoBehaviour
 
     // Start is called before the first frame update
     void Start()
+    {
+        _activeObjects = new List<GameObject>();
+        createTiles();
+    }
+
+    void createTiles()
     {
         _gameMap = new List<List<GameObject>>();
 
@@ -55,9 +63,10 @@ public class GameManager : MonoBehaviour
                     TilePrefab, 
                     new Vector3(TileXOffset + (posX * TileXSize), TileYOffset - (posY * TileYSize), 0), 
                     Quaternion.identity
-                    );
+                );
                 
                 _gameMap[posY][posX] = tile;
+                _activeObjects.Add(tile);
                 
                 // Set random colour
                 Image image = tile.GetComponent(typeof(Image)) as Image;
@@ -72,7 +81,23 @@ public class GameManager : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        
+        if (!debounce && Input.GetMouseButtonDown(0))
+        {
+            debounce = true;
+
+            foreach (var obj in _activeObjects)
+            {
+                Destroy(obj);
+            }
+
+            createTiles();
+        }
+
+
+        if (!Input.GetMouseButtonDown(0))
+        {
+            debounce = false;
+        }
     }
 
     private void Spawn()
