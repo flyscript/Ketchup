@@ -22,6 +22,7 @@ public class BoardManager : MonoBehaviour, IPointerClickHandler
     
     private static List<GameObject> _activeObjects;
     private static List<List<GameObject>> _gameMap;
+    private static Dictionary<TileType, int> _tileTypeCounter;
 
     // Start is called before the first frame update
     void Start()
@@ -33,12 +34,90 @@ public class BoardManager : MonoBehaviour, IPointerClickHandler
     }
 
     /// <summary>
+    /// Resets and enables the tile type tracker for ensuring all new tiles have matches
+    /// </summary>
+    public static void ResetTileTypeCounter()
+    {
+        _tileTypeCounter = new Dictionary<TileType, int>();
+
+        for (int e = 0; e < (int) TileType.Maximum; e++)
+        {
+            _tileTypeCounter[(TileType) e] = 0;
+        }
+    }
+
+    /// <summary>
+    /// Scrambles the board
+    /// </summary>
+    /// <param name="steps">The number of times to swap random tiles</param>
+    public static void ScrambleBoard(int steps = 100)
+    {
+        for (int i = 0; i < steps; i++)
+        {
+            int x1 = Random.Range(1, _gameMap[0].Count - 1);
+            int x2 = Random.Range(1, _gameMap[0].Count - 1);
+            int y1 = Random.Range(1, _gameMap.Count - 1);
+            int y2 = Random.Range(1, _gameMap.Count - 1);
+
+            (_gameMap[y1][x1], _gameMap[y2][x2]) = (_gameMap[y2][x2], _gameMap[y1][x1]);
+        }
+        
+        //TODO: Check matches are possible, and if not then re-scramble
+    }
+
+    /// <summary>
+    /// Ensure that there is a match for each tile
+    /// TODO: This could probably be improved by just creating the tiles in pairs in the first place
+    /// </summary>
+    private static void EnsureColourMatching()
+    {
+        for (int tileTypeA = 0; tileTypeA < _tileTypeCounter.Count; tileTypeA++)
+        {
+            // We ensure that the total number of tiles is even, so
+            //  if any of the types are uneven, then another must be too 
+            if (_tileTypeCounter[(TileType)tileTypeA] % 2 == 1)
+            {
+                // Check all subsequent types for the next one used an un-even number of times
+                for (int tileTypeB = tileTypeA+1; tileTypeB < _tileTypeCounter.Count; tileTypeB++)
+                {
+                    if (_tileTypeCounter[(TileType)tileTypeB] % 2 == 1)
+                    {
+                        // Get the first tile of the second type
+                        // (if there's an uneven amount there definitely is one)
+                        foreach (var tile in _activeObjects)
+                        {
+                            if (tile.GetComponent<Tile>().Type == (TileType) tileTypeB)
+                            {
+                                // Make a tile of type B becme type A
+                                tile.GetComponent<Tile>().Type = (TileType) tileTypeA;
+                                Image image = tile.transform.GetChild(1).GetComponent(typeof(Image)) as Image;
+                                image.color = TileTypeManager.GetColour((TileType) tileTypeA);
+                                
+                                // Adjust figures on type counter
+                                _tileTypeCounter[(TileType) tileTypeB] -= 1;
+                                _tileTypeCounter[(TileType) tileTypeA] += 1;
+                                break;
+                            }
+                            
+                        }
+                    }
+                }
+            }
+            
+        }
+    }
+    
+    
+    /// <summary>
     /// Tile creation function
     /// </summary>
     /// <param name="sizeX">The width of the grid to create</param>
     /// <param name="sizeY">The height of the grid to create</param>
     private void CreateTiles(int sizeX = 0, int sizeY = 0)
     {
+        // Clear the board
+        _activeObjects.Clear();
+        
         // Create random tile size
         //TODO: remove random size when game is at desired stage
         sizeX = Mathf.RoundToInt(Random.Range(MAX_TILES_X_MIN, MAX_TILES_X_MAX));
@@ -52,6 +131,7 @@ public class BoardManager : MonoBehaviour, IPointerClickHandler
         
         // Create tile datastruct
         _gameMap = new List<List<GameObject>>();
+        ResetTileTypeCounter();
         
         var firstBlankRow = new List<GameObject>();
         firstBlankRow.AddRange(new GameObject[sizeX+2]);
@@ -80,9 +160,14 @@ public class BoardManager : MonoBehaviour, IPointerClickHandler
                 _gameMap[posY+1][posX+1] = tile;
                 _activeObjects.Add(tile);
                 
-                // Set random colour
+                // Set tile type
+                var type = TileTypeManager.GetRandomTileType();
+                tile.GetComponent<Tile>().Type = type;
+                
+                _tileTypeCounter[type] += 1;
+                
                 Image image = tile.transform.GetChild(1).GetComponent(typeof(Image)) as Image;
-                image.color = Random.ColorHSV(0f, 1f, 0.75f, 1f, 0.5f, 1f);
+                image.color = TileTypeManager.GetColour(type);
                 
                 // Set Parent
                 tile.transform.SetParent(TileArea.transform, false);
@@ -92,6 +177,10 @@ public class BoardManager : MonoBehaviour, IPointerClickHandler
         var lastBlankRow = new List<GameObject>();
         lastBlankRow.AddRange(new GameObject[sizeX+2]);
         _gameMap.Add(lastBlankRow);
+        
+        // Once the rough til map has been created, clean it up a bit
+        EnsureColourMatching();
+        ScrambleBoard((sizeX * sizeY) / 2 );
     }
 
     // Update is called once per frame
@@ -126,7 +215,9 @@ public class BoardManager : MonoBehaviour, IPointerClickHandler
             {
                 Destroy(obj);
             }
-
+            
+            _activeObjects.Clear();
+            
             CreateTiles();
         }
     }

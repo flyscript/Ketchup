@@ -8,6 +8,8 @@ using UnityEngine.EventSystems;
 
 public class Tile : MonoBehaviour, IPointerClickHandler
 {
+    public TileType Type;
+    
     public int XPosition = 0;
 
     public int YPosition = 0;

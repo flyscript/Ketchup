@@ -30,6 +30,18 @@ namespace Game
             return false;
         }
 
+        private static bool ValidateTileMatch(GameObject tileA, GameObject tileB)
+        {
+            //TODO: check path
+
+            if (tileA.GetComponent<Tile>().Type != tileB.GetComponent<Tile>().Type)
+            {
+                return false;
+            }
+
+            return true;
+        }
+
         /// <summary>
         /// The main entry point for actions when a tile is clicked
         /// </summary>
@@ -37,7 +49,7 @@ namespace Game
         public static void TileClicked(GameObject tile)
         {
             // Highlight selection
-            tile.transform.GetChild(0).GetComponent<Image>().color = Color.red;
+            tile.transform.GetChild(0).GetComponent<Image>().color = Color.white;
             
             // If no selection existed, then the incoming tile is the start of a new selection
             if (currentSelection == null)
@@ -45,19 +57,23 @@ namespace Game
                 currentSelection = tile;
                 return;
             }
-            // If the new tile is the same as the selected tile, deselect it
-            else if (currentSelection == tile)
+            
+            // If the new tile is the same as the selected tile, or valdiation failed, then deselect it
+            if (currentSelection == tile || !ValidateTileMatch(currentSelection, tile))
             {
+                tile.transform.GetChild(0).GetComponent<Image>().color = new Color(0.0f,0.0f,0.0f,0.0f);
                 ClearSelection();
                 return;
             }
             
-            // If a selection existed, then check the path
-            //TODO: check path
-            
             // Destroy tiles
+            currentSelection.transform.GetChild(0).GetComponent<Image>().color = Color.green;
             boardManager.DestroyTile(currentSelection);
+                
+            tile.transform.GetChild(0).GetComponent<Image>().color = Color.green;
             boardManager.DestroyTile(tile);
+            
+            currentSelection = null;
         }
         
     }
