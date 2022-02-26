@@ -9,10 +9,10 @@ namespace Game
 
 public class BoardManager : MonoBehaviour, IPointerClickHandler
 {
-    private const int MAX_TILES_X_MAX = 12;
+    private const int MAX_TILES_X_MAX = 8;
     private const int MAX_TILES_X_MIN = 6;
-    private const int MAX_TILES_Y_MAX = 23;
-    private const int MAX_TILES_Y_MIN = 15;
+    private const int MAX_TILES_Y_MAX = 14;
+    private const int MAX_TILES_Y_MIN = 10;
     
     public int TileXSize = 100;
     public int TileYSize = 100;
@@ -81,7 +81,7 @@ public class BoardManager : MonoBehaviour, IPointerClickHandler
                 _activeObjects.Add(tile);
                 
                 // Set random colour
-                Image image = tile.GetComponent(typeof(Image)) as Image;
+                Image image = tile.transform.GetChild(1).GetComponent(typeof(Image)) as Image;
                 image.color = Random.ColorHSV(0f, 1f, 0.75f, 1f, 0.5f, 1f);
                 
                 // Set Parent

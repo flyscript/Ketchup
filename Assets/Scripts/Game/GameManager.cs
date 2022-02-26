@@ -22,7 +22,7 @@ namespace Game
         {
             if (currentSelection != null)
             {
-                currentSelection.GetComponent<Image>().color = Random.ColorHSV(0f, 1f, 0.75f, 1f, 0.5f, 1f);
+                currentSelection.transform.GetChild(0).GetComponent<Image>().color = new Color(0.0f,0.0f,0.0f,0.0f);
                 currentSelection = null;
                 return true;
             }
@@ -37,7 +37,7 @@ namespace Game
         public static void TileClicked(GameObject tile)
         {
             // Highlight selection
-            tile.GetComponent<Image>().color = Color.red;
+            tile.transform.GetChild(0).GetComponent<Image>().color = Color.red;
             
             // If no selection existed, then the incoming tile is the start of a new selection
             if (currentSelection == null)
