@@ -11,7 +11,7 @@ namespace Game
 
         public static void SetBoardManager(BoardManager manager)
         {
-            boardManager = new BoardManager();
+            boardManager = manager;
         }
 
         /// <summary>
@@ -27,6 +27,13 @@ namespace Game
             if (currentSelection == null)
             {
                 currentSelection = tile;
+                return;
+            }
+            // If the new tile is the same as the selected tile, deselect it
+            else if (currentSelection == tile)
+            {
+                currentSelection = null;
+                tile.GetComponent<Image>().color = Random.ColorHSV(0f, 1f, 0.75f, 1f, 0.5f, 1f);
                 return;
             }
             

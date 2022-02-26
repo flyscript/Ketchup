@@ -26,6 +26,8 @@ public class BoardManager : MonoBehaviour, IPointerClickHandler
     // Start is called before the first frame update
     void Start()
     {
+        GameManager.SetBoardManager(this);
+        
         _activeObjects = new List<GameObject>();
         CreateTiles();
     }
@@ -105,11 +107,13 @@ public class BoardManager : MonoBehaviour, IPointerClickHandler
     {
         Tile objTile = tile.GetComponent<Tile>();
         
+        Debug.Log($"Destroying tile at position {objTile.XPosition}, {objTile.YPosition} on grid x {_gameMap[0].Count} x {_gameMap.Count} ");
+        
         // Remove the tile from the grid data struct
-        _gameMap[objTile.XPosition + 1][objTile.YPosition + 1] = null;
+        _gameMap[objTile.YPosition + 1][objTile.XPosition + 1] = null;
         
         // Delete the game object itself
-        Destroy(tile, 0.5f);
+        Destroy(tile, 0.4f);
     }
     
     /// <summary>
