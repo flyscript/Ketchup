@@ -122,14 +122,15 @@ public class BoardManager : MonoBehaviour, IPointerClickHandler
     /// <param name="eventData"></param>
     public void OnPointerClick(PointerEventData eventData)
     {
-        Debug.Log("Remake!");
-        
-        foreach (var obj in _activeObjects)
+        if (!GameManager.ClearSelection())
         {
-            Destroy(obj);
-        }
+            foreach (var obj in _activeObjects)
+            {
+                Destroy(obj);
+            }
 
-        CreateTiles();
+            CreateTiles();
+        }
     }
 }
 

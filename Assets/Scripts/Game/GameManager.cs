@@ -15,6 +15,22 @@ namespace Game
         }
 
         /// <summary>
+        /// Deselects the currently selected tile
+        /// </summary>
+        /// <returns>True if a tile was cleared</returns>
+        public static bool ClearSelection()
+        {
+            if (currentSelection != null)
+            {
+                currentSelection.GetComponent<Image>().color = Random.ColorHSV(0f, 1f, 0.75f, 1f, 0.5f, 1f);
+                currentSelection = null;
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
         /// The main entry point for actions when a tile is clicked
         /// </summary>
         /// <param name="tile">The tile that was selected</param>
@@ -32,8 +48,7 @@ namespace Game
             // If the new tile is the same as the selected tile, deselect it
             else if (currentSelection == tile)
             {
-                currentSelection = null;
-                tile.GetComponent<Image>().color = Random.ColorHSV(0f, 1f, 0.75f, 1f, 0.5f, 1f);
+                ClearSelection();
                 return;
             }
             
