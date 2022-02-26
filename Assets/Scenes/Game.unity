@@ -463,4 +463,4 @@ MonoBehaviour:
   TileXSize: 100
   TileYSize: 100
   TilePrefab: {fileID: 6496806453514654484, guid: 7ce945d9181109d44a1edcf0721e05f2, type: 3}
-  TileArea: {fileID: 1419835073}
+  TileArea: {fileID: 1170115361}
