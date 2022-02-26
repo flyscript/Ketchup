@@ -107,8 +107,6 @@ public class BoardManager : MonoBehaviour, IPointerClickHandler
     {
         Tile objTile = tile.GetComponent<Tile>();
         
-        Debug.Log($"Destroying tile at position {objTile.XPosition}, {objTile.YPosition} on grid x {_gameMap[0].Count} x {_gameMap.Count} ");
-        
         // Remove the tile from the grid data struct
         _gameMap[objTile.YPosition + 1][objTile.XPosition + 1] = null;
         
