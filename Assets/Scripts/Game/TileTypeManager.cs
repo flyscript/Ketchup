@@ -27,7 +27,7 @@ namespace Game
         /// <returns>A random tile type</returns>
         public static TileType GetRandomTileType()
         {
-            return (TileType) Random.Range(0, (int)TileType.Maximum-1);
+            return (TileType) Random.Range(0, (int)TileType.Maximum);
         }
 
         /// <summary>
@@ -55,7 +55,7 @@ namespace Game
                 case TileType.G:
                     return Color.gray;
                 case TileType.H:
-                    return Color.black;
+                    return Color.white;
             }
 
             throw new Exception("Tile Type unrecognised");

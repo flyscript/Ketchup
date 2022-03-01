@@ -460,7 +460,22 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4a4cf1b01e4f48f492ee5da383c73d3d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  EffectTime: 2
+  MAX_TILES_X_MAX: 6
+  MAX_TILES_X_MIN: 6
+  MAX_TILES_Y_MAX: 12
+  MAX_TILES_Y_MIN: 10
   TileXSize: 150
   TileYSize: 150
+  CheckSpotPrefab: {fileID: 6496806453514654484, guid: badefc8292edf514d82145f824ac1ed1, type: 3}
+  TerminateSpotPrefab: {fileID: 6496806453514654484, guid: 4a3ad0fe5f094e346abc4bd4c7870142, type: 3}
+  FoundSpotPrefab: {fileID: 6496806453514654484, guid: e5e2e81282a13934ea24a0a994320c4d, type: 3}
   TilePrefab: {fileID: 6496806453514654484, guid: 7ce945d9181109d44a1edcf0721e05f2, type: 3}
+  HighlightPrefab: {fileID: 6496806453514654484, guid: 9871993bd22b00c4fb7594fd9eae3133, type: 3}
+  HorizontalLinePrefab: {fileID: 6496806453514654484, guid: 8b623862e99c01b438d872edfbc431c8, type: 3}
+  VerticalLinePrefab: {fileID: 6496806453514654484, guid: df7fa95e60f2d474392426f672ae7ce2, type: 3}
+  TopLeftLinePrefab: {fileID: 6496806453514654484, guid: b8618a292dc65564aa1738dea7fea9ac, type: 3}
+  TopRightLinePrefab: {fileID: 6496806453514654484, guid: 35f25f2b8dd073640a13767182da057a, type: 3}
+  BottomLeftLinePrefab: {fileID: 6496806453514654484, guid: 45bb94160dce45148bc334ad40241a0a, type: 3}
+  BottomRightLinePrefab: {fileID: 6496806453514654484, guid: b8d8e5a2fcdafb24bb6f0f7b570b94e4, type: 3}
   TileArea: {fileID: 1170115361}

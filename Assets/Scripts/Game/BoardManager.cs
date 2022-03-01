@@ -9,15 +9,27 @@ namespace Game
 
 public class BoardManager : MonoBehaviour, IPointerClickHandler
 {
-    private const int MAX_TILES_X_MAX = 8;
-    private const int MAX_TILES_X_MIN = 6;
-    private const int MAX_TILES_Y_MAX = 14;
-    private const int MAX_TILES_Y_MIN = 10;
+    public float EffectTime = 0.4f;
+    
+    public int MAX_TILES_X_MAX = 8;
+    public int MAX_TILES_X_MIN = 6;
+    public int MAX_TILES_Y_MAX = 14;
+    public int MAX_TILES_Y_MIN = 10;
     
     public int TileXSize = 100;
     public int TileYSize = 100;
     
+    public GameObject CheckSpotPrefab = null;
+    public GameObject TerminateSpotPrefab = null;
+    public GameObject FoundSpotPrefab = null;
     public GameObject TilePrefab = null;
+    public GameObject HighlightPrefab = null;
+    public GameObject HorizontalLinePrefab = null;
+    public GameObject VerticalLinePrefab = null;
+    public GameObject TopLeftLinePrefab = null;
+    public GameObject TopRightLinePrefab = null;
+    public GameObject BottomLeftLinePrefab = null;
+    public GameObject BottomRightLinePrefab = null;
     public GameObject TileArea = null;
     
     private static List<GameObject> _activeObjects;
@@ -28,6 +40,10 @@ public class BoardManager : MonoBehaviour, IPointerClickHandler
     void Start()
     {
         GameManager.SetBoardManager(this);
+        PathFinder.Board = this;
+        PathFinder.CheckSpot = CheckSpotPrefab;
+        PathFinder.TerminateSpot = TerminateSpotPrefab;
+        PathFinder.FoundSpot = FoundSpotPrefab;
         
         _activeObjects = new List<GameObject>();
         CreateTiles();
@@ -46,11 +62,17 @@ public class BoardManager : MonoBehaviour, IPointerClickHandler
         }
     }
 
+    public List<List<GameObject>> GetMap()
+    {
+        return _gameMap;
+    }
+    
+
     /// <summary>
     /// Scrambles the board
     /// </summary>
     /// <param name="steps">The number of times to swap random tiles</param>
-    public static void ScrambleBoard(int steps = 100)
+    public void ScrambleBoard(int steps = 100)
     {
         for (int i = 0; i < steps; i++)
         {
@@ -59,6 +81,19 @@ public class BoardManager : MonoBehaviour, IPointerClickHandler
             int y1 = Random.Range(1, _gameMap.Count - 1);
             int y2 = Random.Range(1, _gameMap.Count - 1);
 
+            var tileA = _gameMap[y1][x1];
+            var coordA = tileA.GetComponent<Tile>().Position.Clone();
+            var tileB = _gameMap[y2][x2];
+            var coordB = tileB.GetComponent<Tile>().Position.Clone();
+            
+            // Swap them visually
+            tileA.GetComponent<Tile>().Position = coordB;
+            tileB.GetComponent<Tile>().Position = coordA;
+            
+            PlaceItemAtGridPosition(tileA, coordB);
+            PlaceItemAtGridPosition(tileA, coordA);
+            
+            // Swap them in the data struct
             (_gameMap[y1][x1], _gameMap[y2][x2]) = (_gameMap[y2][x2], _gameMap[y1][x1]);
         }
         
@@ -90,7 +125,7 @@ public class BoardManager : MonoBehaviour, IPointerClickHandler
                             {
                                 // Make a tile of type B becme type A
                                 tile.GetComponent<Tile>().Type = (TileType) tileTypeA;
-                                Image image = tile.transform.GetChild(1).GetComponent(typeof(Image)) as Image;
+                                Image image = tile.transform.GetChild(0).GetComponent(typeof(Image)) as Image;
                                 image.color = TileTypeManager.GetColour((TileType) tileTypeA);
                                 
                                 // Adjust figures on type counter
@@ -106,6 +141,80 @@ public class BoardManager : MonoBehaviour, IPointerClickHandler
             
         }
     }
+
+    public void DrawPath(Path path)
+    {
+        List<GameObject> lines = new List<GameObject>();
+        var directions = path.GetDirections();
+
+        for (int step = 0; step < directions.Count-2; step++)
+        {
+            var direction1 = directions[step].GetDirectionTo(directions[step+1]);
+            var direction2 = directions[step+1].GetDirectionTo(directions[step+2]);
+
+            GameObject lineDirection = null;
+            
+            // Based on where the path is headed, a different kind of line is required
+            switch ((direction1, direction2))
+            {
+                case (Coord.Direction.Down, Coord.Direction.Left):
+                    lineDirection = BottomLeftLinePrefab;
+                    break;
+                case (Coord.Direction.Down, Coord.Direction.Right):
+                    lineDirection = BottomRightLinePrefab;
+                    break;
+                case (Coord.Direction.Down, Coord.Direction.Down):
+                    lineDirection = VerticalLinePrefab;
+                    break;
+                case (Coord.Direction.Up, Coord.Direction.Left):
+                    lineDirection = TopLeftLinePrefab;
+                    break;
+                case (Coord.Direction.Up, Coord.Direction.Right):
+                    lineDirection = TopRightLinePrefab;
+                    break;
+                case (Coord.Direction.Up, Coord.Direction.Up):
+                    lineDirection = VerticalLinePrefab;
+                    break;
+                case (Coord.Direction.Left, Coord.Direction.Up):
+                    lineDirection = BottomRightLinePrefab;
+                    break;
+                case (Coord.Direction.Left, Coord.Direction.Down):
+                    lineDirection = TopRightLinePrefab;
+                    break;
+                case (Coord.Direction.Left, Coord.Direction.Left):
+                    lineDirection = HorizontalLinePrefab;
+                    break;
+                case (Coord.Direction.Right, Coord.Direction.Up):
+                    lineDirection = BottomLeftLinePrefab;
+                    break;
+                case (Coord.Direction.Right, Coord.Direction.Down):
+                    lineDirection = TopLeftLinePrefab;
+                    break;
+                case (Coord.Direction.Right, Coord.Direction.Right):
+                    lineDirection = HorizontalLinePrefab;
+                    break;
+            }
+
+            // If somehow the direction wasn't found, then something was wrong with the directions
+            if (lineDirection == null)
+            {
+                Debug.LogError($"Directions were unable to produce line path! Directions as follows: {direction1.ToString()}, {direction2.ToString()} \n {string.Join("\n", directions)}");
+                return;
+            }
+            
+            // Place line along path
+            var line = Instantiate(lineDirection, Vector3.zero, Quaternion.identity);
+            PlaceItemAtGridPosition(line, directions[step+1]);
+            lines.Add(line);
+        }
+
+        // Destroy the lines after the effect time
+        foreach (var line in lines)
+        {
+            Destroy(line, EffectTime);
+        }
+    }
+    
     
     
     /// <summary>
@@ -133,54 +242,75 @@ public class BoardManager : MonoBehaviour, IPointerClickHandler
         _gameMap = new List<List<GameObject>>();
         ResetTileTypeCounter();
         
-        var firstBlankRow = new List<GameObject>();
-        firstBlankRow.AddRange(new GameObject[sizeX+2]);
-        _gameMap.Add(firstBlankRow);
 
         // Spawn tiles
-        for (int posY = 0; posY < sizeY; posY++)
+        for (int posY = 0; posY <= sizeY+1; posY++)
         {
-            // Create the X row and then add it to the main array, creating the mem address for it
-            var newRow = new List<GameObject>();
-            newRow.AddRange(new GameObject[sizeX+2]);
-            _gameMap.Add(newRow);
+            // Create the X row and then add it to the main array, creating the entry for it
+            _gameMap.Add(new List<GameObject>());
             
             // Create each tile on this row
-            for (int posX = 0; posX < sizeX; posX++)
+            for (int posX = 0; posX <= sizeX+1; posX++)
             {
-                var tile = Instantiate(
-                    TilePrefab, 
-                    new Vector3((TileXSize / 2) + (posX * TileXSize), (TileYSize / -2) - (posY * TileYSize), 0), 
-                    Quaternion.identity
-                );
-
-                tile.GetComponent<Tile>().XPosition = posX;
-                tile.GetComponent<Tile>().YPosition = posY;
                 
-                _gameMap[posY+1][posX+1] = tile;
+                // If the first or last row or column, then create the blank space
+                if (posX == 0 || posX == sizeX + 1 || posY == 0 || posY == sizeY + 1)
+                {
+                    _gameMap[posY].Add(null);
+                    continue;
+                }
+                
+                // Otherwise, create a random tile
+                var tile = Instantiate(TilePrefab, Vector3.zero, Quaternion.identity);
+                tile.name = $"Tile ({posX}, {posY})";
+                tile.GetComponent<Tile>().Position = new Coord(posX, posY);
+                
+                _gameMap[posY].Add(tile);
                 _activeObjects.Add(tile);
                 
-                // Set tile type
                 var type = TileTypeManager.GetRandomTileType();
                 tile.GetComponent<Tile>().Type = type;
-                
                 _tileTypeCounter[type] += 1;
                 
-                Image image = tile.transform.GetChild(1).GetComponent(typeof(Image)) as Image;
+                Image image = tile.transform.GetChild(0).GetComponent(typeof(Image)) as Image;
                 image.color = TileTypeManager.GetColour(type);
                 
-                // Set Parent
-                tile.transform.SetParent(TileArea.transform, false);
+                PlaceItemAtGridPosition(tile, new Coord(posX, posY));
             }
         }
         
-        var lastBlankRow = new List<GameObject>();
-        lastBlankRow.AddRange(new GameObject[sizeX+2]);
-        _gameMap.Add(lastBlankRow);
-        
-        // Once the rough til map has been created, clean it up a bit
+        // Once the rough tile map has been created, clean it up a bit
         EnsureColourMatching();
-        ScrambleBoard((sizeX * sizeY) / 2 );
+        //ScrambleBoard((sizeX * sizeY) / 2 );
+    }
+
+    public GameObject Spawn(GameObject obj, Coord position)
+    {
+        var spawn = Instantiate(obj, Vector3.zero, Quaternion.identity);
+        PlaceItemAtGridPosition(spawn, position);
+        return spawn;
+    }
+
+    public GameObject CreateHighlight(Coord gridPosition)
+    {
+        var line = Instantiate(HighlightPrefab, Vector3.zero, Quaternion.identity);
+        PlaceItemAtGridPosition(line, gridPosition);
+        return line;
+    }
+
+    public void PlaceItemAtGridPosition(GameObject obj, Coord gridPosition)
+    {
+        var v3 = new Vector3(
+            (TileXSize / 2) + (gridPosition.x * TileXSize),
+            (TileYSize / -2) - (gridPosition.y * TileYSize),
+            0);
+        
+        obj.transform.position = v3;
+        
+        //Debug.Log($"Setting object position to coordinate {gridPosition.ToString()} : {v3.ToString()}");
+        
+        // Set Parent
+        obj.transform.SetParent(TileArea.transform, false);
     }
 
     // Update is called once per frame
@@ -197,10 +327,30 @@ public class BoardManager : MonoBehaviour, IPointerClickHandler
         Tile objTile = tile.GetComponent<Tile>();
         
         // Remove the tile from the grid data struct
-        _gameMap[objTile.YPosition + 1][objTile.XPosition + 1] = null;
+        _gameMap[objTile.Position.y][objTile.Position.x] = null;
         
         // Delete the game object itself
-        Destroy(tile, 0.4f);
+        Destroy(tile, EffectTime);
+    }
+
+    /// <summary>
+    /// Command to remove a non-tile object with a timing effect
+    /// </summary>
+    /// <param name="obj"></param>
+    public void DestroyObjectWithEffect(GameObject obj)
+    {
+        // Delete the game object itself
+        Destroy(obj, EffectTime);
+    }
+    
+    /// <summary>
+    /// Command to remove a non-tile object without any wait
+    /// </summary>
+    /// <param name="obj"></param>
+    public void DestroyObject(GameObject obj)
+    {
+        // Delete the game object itself
+        Destroy(obj);
     }
     
     /// <summary>

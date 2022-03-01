@@ -9,10 +9,8 @@ using UnityEngine.EventSystems;
 public class Tile : MonoBehaviour, IPointerClickHandler
 {
     public TileType Type;
-    
-    public int XPosition = 0;
 
-    public int YPosition = 0;
+    public Coord Position = new Coord();
     
     // Start is called before the first frame update
     void Start()
