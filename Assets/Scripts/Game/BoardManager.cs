@@ -86,18 +86,17 @@ public class BoardManager : MonoBehaviour
         {
             var tileB = _activeTiles[Random.Range(0, _activeTiles.Count)];
 
-            // Swap the coordinate properties on the tiles
-            var coordA = tileA.GetComponent<Tile>().Position.Clone();
-            var coordB = tileB.GetComponent<Tile>().Position.Clone();
-            tileA.GetComponent<Tile>().Position = coordB;
-            tileB.GetComponent<Tile>().Position = coordA;
+            // Swap the type properties on the tiles
+            var typeA = tileA.GetComponent<Tile>().Type;
+            var typeB = tileB.GetComponent<Tile>().Type;
+            tileA.GetComponent<Tile>().Type = typeB;
+            tileB.GetComponent<Tile>().Type = typeA;
             
-            // Swap the coordinates visually
-            PlaceItemInWorldAtGridPosition(tileA, coordB);
-            PlaceItemInWorldAtGridPosition(tileB, coordA);
-            
-            // Swap them in the data struct
-            (_gameMap[coordA.y][coordA.x], _gameMap[coordB.y][coordB.x]) = (_gameMap[coordA.y][coordA.x], _gameMap[coordB.y][coordB.x]);
+            // Swap the tiles visually
+            Image imageA = tileA.transform.GetChild(0).GetComponent(typeof(Image)) as Image;
+            imageA.color = TileTypeManager.GetColour(typeB);
+            Image imageB = tileB.transform.GetChild(0).GetComponent(typeof(Image)) as Image;
+            imageB.color = TileTypeManager.GetColour(typeA);
         }
         
         //TODO: Check matches are possible, and if not then re-scramble
