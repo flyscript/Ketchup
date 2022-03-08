@@ -64,13 +64,13 @@ namespace Game
             return new Coord(clone);
         }
 
-        public Coord TurnClockwise()
+        public Coord TurnCounterclockwise()
         {
             (x, y) = (y, -x);
             return this;
         }
 
-        public Coord TurnCounterclockwise()
+        public Coord TurnClockwise()
         {
             (x, y) = (-y, x);
             return this;
