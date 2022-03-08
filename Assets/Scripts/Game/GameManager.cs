@@ -1,3 +1,5 @@
+using System.Data;
+using Newtonsoft.Json.Serialization;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -9,6 +11,19 @@ namespace Game
 
         private static GameObject _currentSelection = null;
         private static GameObject _currentSelectionHighlight = null;
+
+        private static bool _playing;
+
+        public static bool Playing
+        {
+            get { return _playing;}
+            set
+            {
+                ClearSelection();
+                _playing = value;
+            }
+        }
+        
 
         public static void SetBoardManager(BoardManager manager)
         {
@@ -49,6 +64,13 @@ namespace Game
         /// <param name="tile">The tile that was selected</param>
         public static void TileClicked(GameObject tile)
         {
+            // If we're not playing, then don't allow any new selections
+            if (!_playing)
+            {
+                Debug.LogError("NOT PLAYING!");
+                return;
+            }
+            
             // If no selection existed, then the incoming tile is the start of a new selection
             if (_currentSelection == null)
             {
@@ -96,6 +118,7 @@ namespace Game
             }
             
             // Finally, if the match is a go, then handle that
+            
             Debug.Log($"Drawing Green Highlights and Line Path");
             foreach (var image in _currentSelectionHighlight.GetComponentsInChildren<Image>())
             {
@@ -112,8 +135,7 @@ namespace Game
             _boardManager.DestroyObjectWithEffect(_currentSelectionHighlight);
             _boardManager.DestroyObjectWithEffect(newSelectionHighlight);
             
-            _boardManager.DestroyTile(_currentSelection);
-            _boardManager.DestroyTile(tile);
+            _boardManager.NotifyMatch(_currentSelection, tile);
             
             _currentSelectionHighlight = null;
             _currentSelection = null;

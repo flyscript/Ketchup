@@ -7,9 +7,17 @@ using UnityEngine.EventSystems;
 namespace Game
 {
 
-public class BoardManager : MonoBehaviour, IPointerClickHandler
+public class BoardManager : MonoBehaviour
 {
     public float EffectTime = 0.4f;
+        
+    public GameObject TimerBar = null;
+    public GameObject NewGameButton = null;
+    public GameObject ScrambleButton = null;
+        
+    public float GameTime = 60.0f;
+    private float _timeGameStarted;
+    public float MatchBonusTime = 1.0f;
     
     public int MAX_TILES_X_MAX = 8;
     public int MAX_TILES_X_MIN = 6;
@@ -32,7 +40,7 @@ public class BoardManager : MonoBehaviour, IPointerClickHandler
     public GameObject BottomRightLinePrefab = null;
     public GameObject TileArea = null;
     
-    private static List<GameObject> _activeObjects;
+    private static List<GameObject> _activeTiles;
     private static List<List<GameObject>> _gameMap;
     private static Dictionary<TileType, int> _tileTypeCounter;
 
@@ -45,14 +53,14 @@ public class BoardManager : MonoBehaviour, IPointerClickHandler
         PathFinder.TerminateSpot = TerminateSpotPrefab;
         PathFinder.FoundSpot = FoundSpotPrefab;
         
-        _activeObjects = new List<GameObject>();
+        _activeTiles = new List<GameObject>();
         CreateTiles();
     }
 
     /// <summary>
     /// Resets and enables the tile type tracker for ensuring all new tiles have matches
     /// </summary>
-    public static void ResetTileTypeCounter()
+    private static void ResetTileTypeCounter()
     {
         _tileTypeCounter = new Dictionary<TileType, int>();
 
@@ -72,29 +80,24 @@ public class BoardManager : MonoBehaviour, IPointerClickHandler
     /// Scrambles the board
     /// </summary>
     /// <param name="steps">The number of times to swap random tiles</param>
-    public void ScrambleBoard(int steps = 100)
+    public void ScrambleBoard()
     {
-        for (int i = 0; i < steps; i++)
+        foreach (var tileA in _activeTiles)
         {
-            int x1 = Random.Range(1, _gameMap[0].Count - 1);
-            int x2 = Random.Range(1, _gameMap[0].Count - 1);
-            int y1 = Random.Range(1, _gameMap.Count - 1);
-            int y2 = Random.Range(1, _gameMap.Count - 1);
+            var tileB = _activeTiles[Random.Range(0, _activeTiles.Count)];
 
-            var tileA = _gameMap[y1][x1];
+            // Swap the coordinate properties on the tiles
             var coordA = tileA.GetComponent<Tile>().Position.Clone();
-            var tileB = _gameMap[y2][x2];
             var coordB = tileB.GetComponent<Tile>().Position.Clone();
-            
-            // Swap them visually
             tileA.GetComponent<Tile>().Position = coordB;
             tileB.GetComponent<Tile>().Position = coordA;
             
-            PlaceItemAtGridPosition(tileA, coordB);
-            PlaceItemAtGridPosition(tileA, coordA);
+            // Swap the coordinates visually
+            PlaceItemInWorldAtGridPosition(tileA, coordB);
+            PlaceItemInWorldAtGridPosition(tileB, coordA);
             
             // Swap them in the data struct
-            (_gameMap[y1][x1], _gameMap[y2][x2]) = (_gameMap[y2][x2], _gameMap[y1][x1]);
+            (_gameMap[coordA.y][coordA.x], _gameMap[coordB.y][coordB.x]) = (_gameMap[coordA.y][coordA.x], _gameMap[coordB.y][coordB.x]);
         }
         
         //TODO: Check matches are possible, and if not then re-scramble
@@ -119,7 +122,7 @@ public class BoardManager : MonoBehaviour, IPointerClickHandler
                     {
                         // Get the first tile of the second type
                         // (if there's an uneven amount there definitely is one)
-                        foreach (var tile in _activeObjects)
+                        foreach (var tile in _activeTiles)
                         {
                             if (tile.GetComponent<Tile>().Type == (TileType) tileTypeB)
                             {
@@ -204,7 +207,7 @@ public class BoardManager : MonoBehaviour, IPointerClickHandler
             
             // Place line along path
             var line = Instantiate(lineDirection, Vector3.zero, Quaternion.identity);
-            PlaceItemAtGridPosition(line, directions[step+1]);
+            PlaceItemInWorldAtGridPosition(line, directions[step+1]);
             lines.Add(line);
         }
 
@@ -214,7 +217,16 @@ public class BoardManager : MonoBehaviour, IPointerClickHandler
             Destroy(line, EffectTime);
         }
     }
+
+    public void NewBoardClick()
+    {
+        CreateTiles();
+    }
     
+    public void ScrambleBoardClick()
+    {
+        ScrambleBoard();
+    }
     
     
     /// <summary>
@@ -224,8 +236,15 @@ public class BoardManager : MonoBehaviour, IPointerClickHandler
     /// <param name="sizeY">The height of the grid to create</param>
     private void CreateTiles(int sizeX = 0, int sizeY = 0)
     {
+        Debug.Log("CREATING NEW GAME!");
+        
         // Clear the board
-        _activeObjects.Clear();
+        GameManager.ClearSelection();
+        foreach (var obj in _activeTiles)
+        {
+            Destroy(obj);
+        }
+        _activeTiles.Clear();
         
         // Create random tile size
         //TODO: remove random size when game is at desired stage
@@ -266,7 +285,7 @@ public class BoardManager : MonoBehaviour, IPointerClickHandler
                 tile.GetComponent<Tile>().Position = new Coord(posX, posY);
                 
                 _gameMap[posY].Add(tile);
-                _activeObjects.Add(tile);
+                _activeTiles.Add(tile);
                 
                 var type = TileTypeManager.GetRandomTileType();
                 tile.GetComponent<Tile>().Type = type;
@@ -275,26 +294,34 @@ public class BoardManager : MonoBehaviour, IPointerClickHandler
                 Image image = tile.transform.GetChild(0).GetComponent(typeof(Image)) as Image;
                 image.color = TileTypeManager.GetColour(type);
                 
-                PlaceItemAtGridPosition(tile, new Coord(posX, posY));
+                PlaceItemInWorldAtGridPosition(tile, new Coord(posX, posY));
             }
         }
         
         // Once the rough tile map has been created, clean it up a bit
         EnsureColourMatching();
         //ScrambleBoard((sizeX * sizeY) / 2 );
+            
+        // Reset Timer Bar
+        _timeGameStarted = Time.time;
+        SetTimerBarScale(1.0f);
+        
+        GameManager.Playing = true;
+        
+        Debug.Log("NOW PLAYING!");
     }
 
     public GameObject Spawn(GameObject obj, Coord position)
     {
         var spawn = Instantiate(obj, Vector3.zero, Quaternion.identity);
-        PlaceItemAtGridPosition(spawn, position);
+        PlaceItemInWorldAtGridPosition(spawn, position);
         return spawn;
     }
 
     public GameObject CreateHighlight(Coord gridPosition)
     {
         var line = Instantiate(HighlightPrefab, Vector3.zero, Quaternion.identity);
-        PlaceItemAtGridPosition(line, gridPosition);
+        PlaceItemInWorldAtGridPosition(line, gridPosition);
         return line;
     }
 
@@ -304,30 +331,86 @@ public class BoardManager : MonoBehaviour, IPointerClickHandler
             (TileXSize / 2) + (gridPosition.x * TileXSize),
             (TileYSize / -2) - (gridPosition.y * TileYSize),
             0);
-        
-        obj.transform.position = v3;
-        
-        //Debug.Log($"Setting object position to coordinate {gridPosition.ToString()} : {v3.ToString()}");
+
+        RectTransform transform = obj.transform.GetComponent(typeof(RectTransform)) as RectTransform;
+        transform.position = v3;
+
+        Debug.Log($"Setting {obj.name} position to coordinate {gridPosition.ToString()} : {v3.ToString()}");
+    }
+
+    public void PlaceItemInWorldAtGridPosition(GameObject obj, Coord gridPosition)
+    {
+        PlaceItemAtGridPosition(obj, gridPosition);
         
         // Set Parent
         obj.transform.SetParent(TileArea.transform, false);
     }
 
+    /// <summary>
+    /// Scales the timer bar
+    /// </summary>
+    /// <param name="fullness">How full the timer bar is, should be 0 - 1</param>
+    private void SetTimerBarScale(float fullness)
+    {
+        // Clamp fullness between 0 and 1
+        fullness = fullness > 1 ? 1 : fullness < 0 ? 0 : fullness;
+        
+        RectTransform timerTransform = TimerBar.transform.GetComponent(typeof(RectTransform)) as RectTransform;
+        RectTransform timerParentTransform = TimerBar.transform.parent.GetComponent(typeof(RectTransform)) as RectTransform;
+        
+        timerTransform.sizeDelta = new Vector2(timerParentTransform.rect.width * fullness, timerTransform.rect.height);
+        
+        Image timerImage = TimerBar.transform.GetComponent(typeof(Image)) as Image;
+        timerImage.color = new Color((fullness < 0.5f? 1.0f - fullness*2 : 0), fullness+0.25f, 0);
+
+        // If time has run out, then no longer playing
+        if (fullness < 0.001f)
+        {
+            Debug.LogWarning("RAN OUT OF TIME!");
+            GameManager.Playing = false;
+        }
+    }
+    
     // Update is called once per frame
     void Update()
     {
+        if (_activeTiles != null && _activeTiles.Count != 0 && GameManager.Playing)
+        {
+            SetTimerBarScale(1.0f - ((Time.time - _timeGameStarted) / GameTime));
+        }
+    }
+
+    public void NotifyMatch(GameObject tileA, GameObject TileB)
+    {
+        // Destroy the tiles
+        DestroyTile(tileA);
+        DestroyTile(TileB);
+        
+        // Add extra time
+        _timeGameStarted += MatchBonusTime;
+        
+        // Has the player finished the game?
+        if (_activeTiles.Count == 0)
+        {
+            Debug.Log("YOU COMPLETED THE GAME!");
+            GameManager.Playing = false;
+        }
+        Debug.Log($"Tiles Left: {_activeTiles.Count}");
     }
 
     /// <summary>
     /// Command to remove a tile from the game board
     /// </summary>
     /// <param name="tile"></param>
-    public void DestroyTile(GameObject tile)
+    private void DestroyTile(GameObject tile)
     {
         Tile objTile = tile.GetComponent<Tile>();
         
         // Remove the tile from the grid data struct
         _gameMap[objTile.Position.y][objTile.Position.x] = null;
+        
+        // Remove the tile from the active tiles
+        _activeTiles.Remove(tile);
         
         // Delete the game object itself
         Destroy(tile, EffectTime);
@@ -353,24 +436,6 @@ public class BoardManager : MonoBehaviour, IPointerClickHandler
         Destroy(obj);
     }
     
-    /// <summary>
-    /// When the background is clicked, recreate the grid
-    /// </summary>
-    /// <param name="eventData"></param>
-    public void OnPointerClick(PointerEventData eventData)
-    {
-        if (!GameManager.ClearSelection())
-        {
-            foreach (var obj in _activeObjects)
-            {
-                Destroy(obj);
-            }
-            
-            _activeObjects.Clear();
-            
-            CreateTiles();
-        }
-    }
 }
 
 }
