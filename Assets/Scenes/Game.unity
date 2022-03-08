@@ -460,7 +460,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4a4cf1b01e4f48f492ee5da383c73d3d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  EffectTime: 2
+  EffectTime: 0.4
   MAX_TILES_X_MAX: 6
   MAX_TILES_X_MIN: 6
   MAX_TILES_Y_MAX: 12

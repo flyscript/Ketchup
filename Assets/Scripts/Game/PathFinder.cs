@@ -379,18 +379,32 @@ namespace Game
                 return;
             }
 
-            // Successfully checked this position as a blank space
+            // Successfully checked this position as a blank space at this point
             if (PostSpots)
             {
                 var checkSpot = Board.Spawn(CheckSpot, step.path.GetCurrentPosition());
                 Board.DestroyObjectWithEffect(checkSpot);
             }
             
-            // Check each direction from this position
-            StepAlongSearchPath(step.Clone(), Coord.Up());
-            StepAlongSearchPath(step.Clone(), Coord.Down());
-            StepAlongSearchPath(step.Clone(), Coord.Left());
-            StepAlongSearchPath(step.Clone(), Coord.Right());
+            // Check each direction from this position, favouring the direction it was already going
+            Coord[] directions = new[] {Coord.Up(), Coord.Down(), Coord.Left(), Coord.Right()};
+            switch (step.direction.GetDirection())
+            {
+                case Coord.Direction.Down:
+                    (directions[0], directions[1]) = (directions[1], directions[0]);
+                    break;
+                case Coord.Direction.Left:
+                    (directions[0], directions[2]) = (directions[2], directions[0]);
+                    break;
+                case Coord.Direction.Right:
+                    (directions[0], directions[3]) = (directions[3], directions[0]);
+                    break;
+            }
+
+            foreach (var direction in directions)
+            {
+                StepAlongSearchPath(step.Clone(), direction);
+            }
         }
         
         /// <summary>
