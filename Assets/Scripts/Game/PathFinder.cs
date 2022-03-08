@@ -131,6 +131,13 @@ namespace Game
 
 
         // Vector methods
+        
+        public Direction GetDirection()
+        {
+            var direction = (x * 3) + y;
+            
+            return (Direction)direction;
+        }
 
         public Coord GetCoordDirectionTo(Coord position)
         {
