@@ -15,6 +15,12 @@ namespace Game
         F,
         G,
         H,
+        I,
+        J,
+        K,
+        L,
+        M,
+        N,
         Maximum // Used for counting number of tile types
     }
     
@@ -56,6 +62,18 @@ namespace Game
                     return Color.gray;
                 case TileType.H:
                     return Color.white;
+                case TileType.I:
+                    return new Color(0.5f,0,0);
+                case TileType.J:
+                    return new Color(0,0.5f,0);
+                case TileType.K:
+                    return new Color(0,0,0.5f);
+                case TileType.L:
+                    return new Color(0,0.5f,0.5f);
+                case TileType.M:
+                    return new Color(0.5f,0.5f,0);
+                case TileType.N:
+                    return new Color(0.5f,0,0.5f);
             }
 
             throw new Exception("Tile Type unrecognised");
